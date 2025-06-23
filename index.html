@@ -74,8 +74,8 @@
     <div id="schedule-modal" class="fixed inset-0 z-50 flex justify-center items-center p-4 opacity-0 pointer-events-none">
         <div id="schedule-content" class="glass-effect rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col transform scale-95 transition-transform duration-300">
             <!-- Заголовок модального окна -->
-            <div class="flex justify-between items-center p-4 border-b border-white/20 flex-shrink-0">
-                <h2 id="schedule-title" class="text-xl font-bold text-white">Расписание точки</h2>
+            <div class="flex justify-between items-center p-3 sm:p-4 border-b border-white/20 flex-shrink-0">
+                <h2 id="schedule-title" class="text-lg sm:text-xl font-bold text-white">Расписание точки</h2>
                 <button id="close-modal-btn" class="text-slate-300 hover:text-white transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -83,11 +83,11 @@
                 </button>
             </div>
             <!-- Контейнер для самого расписания с прокруткой -->
-            <div id="schedule-grid" class="p-4 sm:p-6 overflow-y-auto">
+            <div id="schedule-grid" class="p-3 sm:p-4 overflow-y-auto">
                 <!-- Сюда будет динамически вставляться сетка расписания -->
             </div>
             <!-- Футер модального окна с кнопками -->
-            <div id="booking-buttons" class="p-4 border-t border-white/20 flex-shrink-0">
+            <div id="booking-buttons" class="p-3 sm:p-4 border-t border-white/20 flex-shrink-0">
                 <!-- Сюда будут вставляться кнопки -->
             </div>
         </div>
@@ -148,7 +148,7 @@
         function generateMockSchedule() {
             const schedule = {};
             const today = new Date();
-            const weekdays = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+            const weekdays = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
             for (let i = 0; i < 7; i++) {
                 const day = new Date(today);
                 day.setDate(today.getDate() + i);
@@ -157,7 +157,7 @@
                 schedule[dayKey] = { dayName: dayName, slots: [] };
                 for (let hour = 10; hour < 23; hour++) {
                     schedule[dayKey].slots.push({
-                        time: `${hour}:00 - ${hour + 1}:00`,
+                        time: `${hour}:00`, // Убрали вторую часть для компактности
                         isBusy: Math.random() > 0.6
                     });
                 }
@@ -173,25 +173,26 @@
             bookingButtonsContainer.innerHTML = '';
 
             const gridContainer = document.createElement('div');
-            gridContainer.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4';
+            gridContainer.className = 'grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3';
 
             for (const dateKey in generatedSchedule) {
                 const dayData = generatedSchedule[dateKey];
                 const dayCard = document.createElement('div');
-                // Сделали карточки дня чуть более контрастными
-                dayCard.className = 'bg-slate-900/80 rounded-2xl p-4 border border-white/10';
+                // Сделали карточки дня более компактными
+                dayCard.className = 'bg-slate-900/80 rounded-xl p-2 sm:p-3 border border-white/10';
                 const dayHeader = document.createElement('h3');
-                dayHeader.className = 'text-white font-semibold text-center mb-3';
+                dayHeader.className = 'text-white font-semibold text-center text-sm mb-2';
                 dayHeader.textContent = `${dayData.dayName}, ${dateKey}`;
                 dayCard.appendChild(dayHeader);
                 const slotsList = document.createElement('div');
-                slotsList.className = 'space-y-2';
+                slotsList.className = 'space-y-1.5';
                 dayData.slots.forEach(slot => {
                     const slotDiv = document.createElement('div');
+                    // Уменьшены размеры слотов
                     const statusClass = slot.isBusy 
-                        ? 'bg-red-500/30 text-red-300 border-red-500/40' 
-                        : 'bg-green-500/30 text-green-300 border-green-500/40';
-                    slotDiv.className = `p-2 rounded-md text-sm text-center border ${statusClass}`;
+                        ? 'bg-red-500/30 text-red-300/80 border-red-500/40' 
+                        : 'bg-green-500/30 text-green-300/90 border-green-500/40';
+                    slotDiv.className = `p-1.5 rounded-md text-xs text-center border ${statusClass}`;
                     slotDiv.textContent = `${slot.time} - ${slot.isBusy ? 'Занято' : 'Свободно'}`;
                     slotsList.appendChild(slotDiv);
                 });
@@ -202,31 +203,16 @@
             
             const bookingLabel = document.createElement('h4');
             bookingLabel.textContent = 'Забронировать через:';
-            bookingLabel.className = 'text-sm font-semibold text-slate-300 mb-3';
+            bookingLabel.className = 'text-xs sm:text-sm font-semibold text-slate-300 mb-2';
             bookingButtonsContainer.appendChild(bookingLabel);
             
             const buttonWrapper = document.createElement('div');
-            buttonWrapper.className = 'flex flex-col sm:flex-row gap-3';
+            buttonWrapper.className = 'flex flex-col sm:flex-row gap-2';
             
             const buttons = [
-                {
-                    text: 'Telegram',
-                    href: point.contacts.telegram,
-                    icon: `<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M9.78 18.65l.28-4.23l7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3L3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.57c-.28 1.13-1.04 1.4-1.74 .88l-4.98-3.65l-2.45 2.35c-.27.27-.5.4-.86.4z"/></svg>`,
-                    style: 'bg-sky-500 hover:bg-sky-600'
-                },
-                {
-                    text: 'WhatsApp',
-                    href: point.contacts.whatsapp,
-                    icon: `<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M19.11 4.91C17.22 3 14.66 1.95 12 1.95c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.5 1.32 5l-1.44 5.25L7.17 21c1.44.8 3.12 1.25 4.83 1.25 5.46 0 9.91-4.45 9.91-9.91 0-2.66-1.05-5.22-2.94-7.11zm-7.11 15.12c-1.49 0-2.97-.4-4.29-1.15l-.3-.18-3.18.84.86-3.1-.2-.31c-.82-1.38-1.25-2.94-1.25-4.51 0-4.38 3.56-7.94 7.94-7.94s7.94 3.56 7.94 7.94-3.56 7.94-7.94 7.94zm4.28-5.45c-.23-.12-1.35-.67-1.56-.74s-.36-.12-.51.12-.59.74-.72.89-.26.18-.48.06c-.23-.12-.95-.35-1.81-1.12-.67-.59-1.12-1.33-1.25-1.56s-.1-.36.06-.48c.11-.11.23-.29.35-.44s.16-.23.23-.38.03-.29-.03-.41c-.06-.12-.51-1.23-.7-1.68s-.36-.38-.51-.38-.29-.01-.44-.01h-.08c-.15 0-.39.06-.59.29s-.8 1.09-.8 2.64.82 3.06.94 3.28 1.59 2.44 3.86 3.43c.54.23.97.37 1.3.48.56.18 1.07.15 1.46.09.44-.06 1.35-.55 1.54-1.08s.19-1-.03-1.12z"/></svg>`,
-                    style: 'bg-green-500 hover:bg-green-600'
-                },
-                {
-                    text: 'Instagram',
-                    href: point.contacts.instagram,
-                    icon: `<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M7.8,2H16.2C19.4,2 22,4.6 22,7.8V16.2A5.8,5.8 0 0,1 16.2,22H7.8C4.6,22 2,19.4 2,16.2V7.8A5.8,5.8 0 0,1 7.8,2M7.6,4A3.6,3.6 0 0,0 4,7.6V16.4C4,18.39 5.61,20 7.6,20H16.4A3.6,3.6 0 0,0 20,16.4V7.6C20,5.61 18.39,4 16.4,4H7.6M17.25,5.5A1.25,1.25 0 0,1 18.5,6.75A1.25,1.25 0 0,1 17.25,8A1.25,1.25 0 0,1 16,6.75A1.25,1.25 0 0,1 17.25,5.5M12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9Z"/></svg>`,
-                    style: 'bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 hover:opacity-90'
-                }
+                { text: 'Telegram', href: point.contacts.telegram, icon: `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M9.78 18.65l.28-4.23l7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3L3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.57c-.28 1.13-1.04 1.4-1.74 .88l-4.98-3.65l-2.45 2.35c-.27.27-.5.4-.86.4z"/></svg>`, style: 'bg-sky-500 hover:bg-sky-600' },
+                { text: 'WhatsApp', href: point.contacts.whatsapp, icon: `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M19.11 4.91C17.22 3 14.66 1.95 12 1.95c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.5 1.32 5l-1.44 5.25L7.17 21c1.44.8 3.12 1.25 4.83 1.25 5.46 0 9.91-4.45 9.91-9.91 0-2.66-1.05-5.22-2.94-7.11zm-7.11 15.12c-1.49 0-2.97-.4-4.29-1.15l-.3-.18-3.18.84.86-3.1-.2-.31c-.82-1.38-1.25-2.94-1.25-4.51 0-4.38 3.56-7.94 7.94-7.94s7.94 3.56 7.94 7.94-3.56 7.94-7.94 7.94zm4.28-5.45c-.23-.12-1.35-.67-1.56-.74s-.36-.12-.51.12-.59.74-.72.89-.26.18-.48.06c-.23-.12-.95-.35-1.81-1.12-.67-.59-1.12-1.33-1.25-1.56s-.1-.36.06-.48c.11-.11.23-.29.35-.44s.16-.23.23-.38.03-.29-.03-.41c-.06-.12-.51-1.23-.7-1.68s-.36-.38-.51-.38-.29-.01-.44-.01h-.08c-.15 0-.39.06-.59.29s-.8 1.09-.8 2.64.82 3.06.94 3.28 1.59 2.44 3.86 3.43c.54.23.97.37 1.3.48.56.18 1.07.15 1.46.09.44-.06 1.35-.55 1.54-1.08s.19-1-.03-1.12z"/></svg>`, style: 'bg-green-500 hover:bg-green-600' },
+                { text: 'Instagram', href: point.contacts.instagram, icon: `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M7.8,2H16.2C19.4,2 22,4.6 22,7.8V16.2A5.8,5.8 0 0,1 16.2,22H7.8C4.6,22 2,19.4 2,16.2V7.8A5.8,5.8 0 0,1 7.8,2M7.6,4A3.6,3.6 0 0,0 4,7.6V16.4C4,18.39 5.61,20 7.6,20H16.4A3.6,3.6 0 0,0 20,16.4V7.6C20,5.61 18.39,4 16.4,4H7.6M17.25,5.5A1.25,1.25 0 0,1 18.5,6.75A1.25,1.25 0 0,1 17.25,8A1.25,1.25 0 0,1 16,6.75A1.25,1.25 0 0,1 17.25,5.5M12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9Z"/></svg>`, style: 'bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 hover:opacity-90' }
             ];
 
             buttons.forEach(btnInfo => {
@@ -234,7 +220,8 @@
                 button.href = btnInfo.href || '#';
                 button.target = '_blank';
                 button.rel = 'noopener noreferrer';
-                button.className = `w-full sm:w-auto flex-grow text-center p-3 rounded-lg font-semibold transition-all flex items-center justify-center space-x-2 text-white ${btnInfo.style}`;
+                // Уменьшены размеры кнопок
+                button.className = `w-full sm:w-auto flex-grow text-center p-2 rounded-lg font-semibold transition-all flex items-center justify-center space-x-2 text-white text-sm ${btnInfo.style}`;
                 button.innerHTML = `${btnInfo.icon}<span>${btnInfo.text}</span>`;
                 buttonWrapper.appendChild(button);
             });
