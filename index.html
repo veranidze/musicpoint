@@ -26,8 +26,12 @@
             background-color: #1e293b; /* slate-800 */
         }
         /* Контейнер для карты */
+        #map-container {
+            position: relative;
+            flex-grow: 1;
+        }
         #map {
-            flex-grow: 1; 
+            height: 100%;
             width: 100%;
             z-index: 10;
         }
@@ -48,6 +52,13 @@
         .custom-icon svg {
              color: white;
         }
+
+        .user-location-icon {
+            background-color: #3b82f6;
+            border-radius: 50%;
+            border: 3px solid #ffffff;
+            box-shadow: 0 0 0 4px #3b82f6;
+        }
         
         /* Стили для "стеклянного" эффекта */
         .glass-effect {
@@ -67,8 +78,16 @@
         <p class="text-sm text-slate-400">Нажмите на точку, чтобы посмотреть расписание</p>
     </header>
 
-    <!-- Контейнер для карты -->
-    <div id="map"></div>
+    <!-- Контейнер для карты и кнопки геолокации -->
+    <div id="map-container">
+        <div id="map"></div>
+        <!-- Кнопка геолокации -->
+        <button id="geolocate-btn" class="absolute bottom-5 right-5 z-20 bg-white p-3 rounded-full shadow-lg hover:bg-gray-100 transition-colors" title="Найти меня">
+            <svg class="w-6 h-6 text-gray-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v.01M12 12v.01M12 16v.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+        </button>
+    </div>
 
     <!-- Модальное окно для отображения расписания -->
     <div id="schedule-modal" class="fixed inset-0 z-50 flex justify-center items-center p-4 opacity-0 pointer-events-none">
@@ -95,25 +114,14 @@
 
     <script>
         const musicPoints = [
-            {
-                id: 1, name: "Music Point на Чавчавадзе", address: "ул. Чавчавадзе, 5", coords: [41.6433, 41.6322],
-                contacts: { telegram: "https://t.me/example_user", whatsapp: "https://wa.me/995000000001", instagram: "https://instagram.com/example" }
-            },
-            {
-                id: 2, name: "Music Point у Порта", address: "ул. Гогебашвили, 33", coords: [41.6515, 41.6445],
-                contacts: { telegram: "https://t.me/example_user2", whatsapp: "https://wa.me/995000000002", instagram: "https://instagram.com/example2" }
-            },
-            {
-                id: 3, name: "Music Point в Старом городе", address: "ул. Звиада Гамсахурдия, 1/5", coords: [41.6468, 41.6380],
-                contacts: { telegram: "https://t.me/example_user3", whatsapp: "https://wa.me/995000000003", instagram: "https://instagram.com/example3" }
-            }
+            { id: 1, name: "Music Point на Чавчавадзе", address: "ул. Чавчавадзе, 5", coords: [41.6433, 41.6322], contacts: { telegram: "https://t.me/example_user", whatsapp: "https://wa.me/995000000001", instagram: "https://instagram.com/example" } },
+            { id: 2, name: "Music Point у Порта", address: "ул. Гогебашвили, 33", coords: [41.6515, 41.6445], contacts: { telegram: "https://t.me/example_user2", whatsapp: "https://wa.me/995000000002", instagram: "https://instagram.com/example2" } },
+            { id: 3, name: "Music Point в Старом городе", address: "ул. Звиада Гамсахурдия, 1/5", coords: [41.6468, 41.6380], contacts: { telegram: "https://t.me/example_user3", whatsapp: "https://wa.me/995000000003", instagram: "https://instagram.com/example3" } }
         ];
 
         const map = L.map('map').setView([41.646, 41.636], 14);
-
         L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-            subdomains: 'abcd', maxZoom: 20
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>', subdomains: 'abcd', maxZoom: 20
         }).addTo(map);
         
         const modal = document.getElementById('schedule-modal');
@@ -122,26 +130,24 @@
         const scheduleTitle = document.getElementById('schedule-title');
         const scheduleGrid = document.getElementById('schedule-grid');
         const bookingButtonsContainer = document.getElementById('booking-buttons');
+        const geolocateBtn = document.getElementById('geolocate-btn');
+        let userMarker = null;
 
         function generateMockSchedule() {
             const schedule = {};
             const today = new Date();
             const weekdays = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
             const names = ["Александр Константинопольский", "Eka K.", "Георгий & группа", "Liza S.", "Репетиция The Band"];
-
             for (let i = 0; i < 7; i++) {
                 const day = new Date(today);
                 day.setDate(today.getDate() + i);
                 const dayKey = `${String(day.getDate()).padStart(2, '0')}.${String(day.getMonth() + 1).padStart(2, '0')}`;
                 const dayName = weekdays[day.getDay()];
                 schedule[dayKey] = { dayName: dayName, slots: [] };
-
                 for (let hour = 10; hour < 23; hour++) {
                     const isBusy = Math.random() > 0.6;
                     schedule[dayKey].slots.push({
-                        time: `${hour}:00`,
-                        isBusy: isBusy,
-                        // Если слот занят, добавляем случайное имя
+                        time: `${hour}:00`, isBusy: isBusy,
                         occupant: isBusy ? names[Math.floor(Math.random() * names.length)] : null
                     });
                 }
@@ -152,13 +158,10 @@
         function displaySchedule(point) {
             scheduleTitle.textContent = `Расписание: ${point.name}`;
             const generatedSchedule = generateMockSchedule();
-            
             scheduleGrid.innerHTML = '';
             bookingButtonsContainer.innerHTML = '';
-
             const gridContainer = document.createElement('div');
             gridContainer.className = 'grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3';
-
             for (const dateKey in generatedSchedule) {
                 const dayData = generatedSchedule[dateKey];
                 const dayCard = document.createElement('div');
@@ -167,21 +170,15 @@
                 dayHeader.className = 'text-white font-semibold text-center text-sm mb-2';
                 dayHeader.textContent = `${dayData.dayName}, ${dateKey}`;
                 dayCard.appendChild(dayHeader);
-
                 const slotsList = document.createElement('div');
-                slotsList.className = 'space-y-1.5 flex-grow'; // flex-grow чтобы карточки дня имели одинаковую высоту
-                
+                slotsList.className = 'space-y-1.5 flex-grow';
                 dayData.slots.forEach(slot => {
                     const slotDiv = document.createElement('div');
-                    // Добавляем min-h-[40px] для минимальной высоты и flex для выравнивания
                     slotDiv.className = `p-1.5 rounded-md text-xs border min-h-[40px] flex flex-col justify-center`;
-
                     if (slot.isBusy) {
-                        // Для занятых слотов выравнивание по левому краю, чтобы перенос строки выглядел аккуратно
                         slotDiv.classList.add('bg-red-500/30', 'text-red-300/80', 'border-red-500/40', 'text-left', 'justify-start');
                         slotDiv.innerHTML = `<span class="font-semibold">${slot.time}</span><span class="opacity-90 break-words">${slot.occupant}</span>`;
                     } else {
-                        // Для свободных слотов - по центру
                         slotDiv.classList.add('bg-green-500/30', 'text-green-300/90', 'border-green-500/40', 'text-center');
                         slotDiv.textContent = `${slot.time} - Свободно`;
                     }
@@ -191,33 +188,25 @@
                 gridContainer.appendChild(dayCard);
             }
             scheduleGrid.appendChild(gridContainer);
-            
             const bookingLabel = document.createElement('h4');
             bookingLabel.textContent = 'Забронировать через:';
             bookingLabel.className = 'text-xs sm:text-sm font-semibold text-slate-300 mb-2';
             bookingButtonsContainer.appendChild(bookingLabel);
-            
             const buttonWrapper = document.createElement('div');
             buttonWrapper.className = 'flex flex-col sm:flex-row gap-2';
-            
             const buttons = [
                 { text: 'Telegram', href: point.contacts.telegram, icon: `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M9.78 18.65l.28-4.23l7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3L3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.57c-.28 1.13-1.04 1.4-1.74 .88l-4.98-3.65l-2.45 2.35c-.27.27-.5.4-.86.4z"/></svg>`, style: 'bg-sky-500 hover:bg-sky-600' },
                 { text: 'WhatsApp', href: point.contacts.whatsapp, icon: `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M19.11 4.91C17.22 3 14.66 1.95 12 1.95c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.5 1.32 5l-1.44 5.25L7.17 21c1.44.8 3.12 1.25 4.83 1.25 5.46 0 9.91-4.45 9.91-9.91 0-2.66-1.05-5.22-2.94-7.11zm-7.11 15.12c-1.49 0-2.97-.4-4.29-1.15l-.3-.18-3.18.84.86-3.1-.2-.31c-.82-1.38-1.25-2.94-1.25-4.51 0-4.38 3.56-7.94 7.94-7.94s7.94 3.56 7.94 7.94-3.56 7.94-7.94 7.94zm4.28-5.45c-.23-.12-1.35-.67-1.56-.74s-.36-.12-.51.12-.59.74-.72.89-.26.18-.48.06c-.23-.12-.95-.35-1.81-1.12-.67-.59-1.12-1.33-1.25-1.56s-.1-.36.06-.48c.11-.11.23-.29.35-.44s.16-.23.23-.38.03-.29-.03-.41c-.06-.12-.51-1.23-.7-1.68s-.36-.38-.51-.38-.29-.01-.44-.01h-.08c-.15 0-.39.06-.59.29s-.8 1.09-.8 2.64.82 3.06.94 3.28 1.59 2.44 3.86 3.43c.54.23.97.37 1.3.48.56.18 1.07.15 1.46.09.44-.06 1.35-.55 1.54-1.08s.19-1-.03-1.12z"/></svg>`, style: 'bg-green-500 hover:bg-green-600' },
                 { text: 'Instagram', href: point.contacts.instagram, icon: `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M7.8,2H16.2C19.4,2 22,4.6 22,7.8V16.2A5.8,5.8 0 0,1 16.2,22H7.8C4.6,22 2,19.4 2,16.2V7.8A5.8,5.8 0 0,1 7.8,2M7.6,4A3.6,3.6 0 0,0 4,7.6V16.4C4,18.39 5.61,20 7.6,20H16.4A3.6,3.6 0 0,0 20,16.4V7.6C20,5.61 18.39,4 16.4,4H7.6M17.25,5.5A1.25,1.25 0 0,1 18.5,6.75A1.25,1.25 0 0,1 17.25,8A1.25,1.25 0 0,1 16,6.75A1.25,1.25 0 0,1 17.25,5.5M12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9Z"/></svg>`, style: 'bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 hover:opacity-90' }
             ];
-
             buttons.forEach(btnInfo => {
                 const button = document.createElement('a');
-                button.href = btnInfo.href || '#';
-                button.target = '_blank';
-                button.rel = 'noopener noreferrer';
+                button.href = btnInfo.href; button.target = '_blank'; button.rel = 'noopener noreferrer';
                 button.className = `w-full sm:w-auto flex-grow text-center p-2 rounded-lg font-semibold transition-all flex items-center justify-center space-x-2 text-white text-sm ${btnInfo.style}`;
                 button.innerHTML = `${btnInfo.icon}<span>${btnInfo.text}</span>`;
                 buttonWrapper.appendChild(button);
             });
-
             bookingButtonsContainer.appendChild(buttonWrapper);
-
             modal.classList.remove('opacity-0', 'pointer-events-none');
             modalContent.classList.remove('scale-95');
         }
@@ -228,15 +217,44 @@
         }
 
         musicPoints.forEach(point => {
-            const customIcon = L.divIcon({
-                className: 'custom-icon',
-                html: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>`,
-                iconSize: [30, 30],
-                iconAnchor: [15, 15]
-            });
+            const customIcon = L.divIcon({ className: 'custom-icon', html: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>`, iconSize: [30, 30], iconAnchor: [15, 15] });
             const marker = L.marker(point.coords, { icon: customIcon }).addTo(map);
             marker.bindPopup(`<b>${point.name}</b><br>${point.address}`);
             marker.on('click', () => { setTimeout(() => displaySchedule(point), 300); });
+        });
+
+        // --- ЛОГИКА ГЕОЛОКАЦИИ ---
+        geolocateBtn.addEventListener('click', () => {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const { latitude, longitude } = position.coords;
+                        const userCoords = [latitude, longitude];
+
+                        // Создаем иконку для пользователя
+                        const userIcon = L.divIcon({
+                            className: 'user-location-icon',
+                            iconSize: [20, 20],
+                        });
+                        
+                        // Если маркер уже есть, обновляем его позицию. Если нет - создаем.
+                        if (userMarker) {
+                            userMarker.setLatLng(userCoords);
+                        } else {
+                            userMarker = L.marker(userCoords, { icon: userIcon }).addTo(map);
+                        }
+                        // Центрируем карту по пользователю
+                        map.setView(userCoords, 15);
+                        userMarker.bindPopup('Вы здесь').openPopup();
+                    },
+                    (error) => {
+                        console.error("Ошибка геолокации:", error);
+                        // Здесь можно добавить уведомление для пользователя, что доступ не был предоставлен
+                    }
+                );
+            } else {
+                console.error("Геолокация не поддерживается этим браузером.");
+            }
         });
 
         closeModalBtn.addEventListener('click', closeModal);
