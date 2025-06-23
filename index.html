@@ -96,37 +96,16 @@
     <script>
         const musicPoints = [
             {
-                id: 1,
-                name: "Music Point на Чавчавадзе",
-                address: "ул. Чавчавадзе, 5",
-                coords: [41.6433, 41.6322],
-                contacts: {
-                    telegram: "https://t.me/example_user",
-                    whatsapp: "https://wa.me/995000000001",
-                    instagram: "https://instagram.com/example"
-                }
+                id: 1, name: "Music Point на Чавчавадзе", address: "ул. Чавчавадзе, 5", coords: [41.6433, 41.6322],
+                contacts: { telegram: "https://t.me/example_user", whatsapp: "https://wa.me/995000000001", instagram: "https://instagram.com/example" }
             },
             {
-                id: 2,
-                name: "Music Point у Порта",
-                address: "ул. Гогебашвили, 33",
-                coords: [41.6515, 41.6445],
-                contacts: {
-                    telegram: "https://t.me/example_user2",
-                    whatsapp: "https://wa.me/995000000002",
-                    instagram: "https://instagram.com/example2"
-                }
+                id: 2, name: "Music Point у Порта", address: "ул. Гогебашвили, 33", coords: [41.6515, 41.6445],
+                contacts: { telegram: "https://t.me/example_user2", whatsapp: "https://wa.me/995000000002", instagram: "https://instagram.com/example2" }
             },
             {
-                id: 3,
-                name: "Music Point в Старом городе",
-                address: "ул. Звиада Гамсахурдия, 1/5",
-                coords: [41.6468, 41.6380],
-                 contacts: {
-                    telegram: "https://t.me/example_user3",
-                    whatsapp: "https://wa.me/995000000003",
-                    instagram: "https://instagram.com/example3"
-                }
+                id: 3, name: "Music Point в Старом городе", address: "ул. Звиада Гамсахурдия, 1/5", coords: [41.6468, 41.6380],
+                contacts: { telegram: "https://t.me/example_user3", whatsapp: "https://wa.me/995000000003", instagram: "https://instagram.com/example3" }
             }
         ];
 
@@ -134,8 +113,7 @@
 
         L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-            subdomains: 'abcd',
-            maxZoom: 20
+            subdomains: 'abcd', maxZoom: 20
         }).addTo(map);
         
         const modal = document.getElementById('schedule-modal');
@@ -149,16 +127,22 @@
             const schedule = {};
             const today = new Date();
             const weekdays = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+            const names = ["Александр Константинопольский", "Eka K.", "Георгий & группа", "Liza S.", "Репетиция The Band"];
+
             for (let i = 0; i < 7; i++) {
                 const day = new Date(today);
                 day.setDate(today.getDate() + i);
                 const dayKey = `${String(day.getDate()).padStart(2, '0')}.${String(day.getMonth() + 1).padStart(2, '0')}`;
                 const dayName = weekdays[day.getDay()];
                 schedule[dayKey] = { dayName: dayName, slots: [] };
+
                 for (let hour = 10; hour < 23; hour++) {
+                    const isBusy = Math.random() > 0.6;
                     schedule[dayKey].slots.push({
-                        time: `${hour}:00`, // Убрали вторую часть для компактности
-                        isBusy: Math.random() > 0.6
+                        time: `${hour}:00`,
+                        isBusy: isBusy,
+                        // Если слот занят, добавляем случайное имя
+                        occupant: isBusy ? names[Math.floor(Math.random() * names.length)] : null
                     });
                 }
             }
@@ -178,22 +162,29 @@
             for (const dateKey in generatedSchedule) {
                 const dayData = generatedSchedule[dateKey];
                 const dayCard = document.createElement('div');
-                // Сделали карточки дня более компактными
-                dayCard.className = 'bg-slate-900/80 rounded-xl p-2 sm:p-3 border border-white/10';
+                dayCard.className = 'bg-slate-900/80 rounded-xl p-2 sm:p-3 border border-white/10 flex flex-col';
                 const dayHeader = document.createElement('h3');
                 dayHeader.className = 'text-white font-semibold text-center text-sm mb-2';
                 dayHeader.textContent = `${dayData.dayName}, ${dateKey}`;
                 dayCard.appendChild(dayHeader);
+
                 const slotsList = document.createElement('div');
-                slotsList.className = 'space-y-1.5';
+                slotsList.className = 'space-y-1.5 flex-grow'; // flex-grow чтобы карточки дня имели одинаковую высоту
+                
                 dayData.slots.forEach(slot => {
                     const slotDiv = document.createElement('div');
-                    // Уменьшены размеры слотов
-                    const statusClass = slot.isBusy 
-                        ? 'bg-red-500/30 text-red-300/80 border-red-500/40' 
-                        : 'bg-green-500/30 text-green-300/90 border-green-500/40';
-                    slotDiv.className = `p-1.5 rounded-md text-xs text-center border ${statusClass}`;
-                    slotDiv.textContent = `${slot.time} - ${slot.isBusy ? 'Занято' : 'Свободно'}`;
+                    // Добавляем min-h-[40px] для минимальной высоты и flex для выравнивания
+                    slotDiv.className = `p-1.5 rounded-md text-xs border min-h-[40px] flex flex-col justify-center`;
+
+                    if (slot.isBusy) {
+                        // Для занятых слотов выравнивание по левому краю, чтобы перенос строки выглядел аккуратно
+                        slotDiv.classList.add('bg-red-500/30', 'text-red-300/80', 'border-red-500/40', 'text-left', 'justify-start');
+                        slotDiv.innerHTML = `<span class="font-semibold">${slot.time}</span><span class="opacity-90 break-words">${slot.occupant}</span>`;
+                    } else {
+                        // Для свободных слотов - по центру
+                        slotDiv.classList.add('bg-green-500/30', 'text-green-300/90', 'border-green-500/40', 'text-center');
+                        slotDiv.textContent = `${slot.time} - Свободно`;
+                    }
                     slotsList.appendChild(slotDiv);
                 });
                 dayCard.appendChild(slotsList);
@@ -220,7 +211,6 @@
                 button.href = btnInfo.href || '#';
                 button.target = '_blank';
                 button.rel = 'noopener noreferrer';
-                // Уменьшены размеры кнопок
                 button.className = `w-full sm:w-auto flex-grow text-center p-2 rounded-lg font-semibold transition-all flex items-center justify-center space-x-2 text-white text-sm ${btnInfo.style}`;
                 button.innerHTML = `${btnInfo.icon}<span>${btnInfo.text}</span>`;
                 buttonWrapper.appendChild(button);
@@ -246,22 +236,12 @@
             });
             const marker = L.marker(point.coords, { icon: customIcon }).addTo(map);
             marker.bindPopup(`<b>${point.name}</b><br>${point.address}`);
-            marker.on('click', () => {
-                setTimeout(() => displaySchedule(point), 300);
-            });
+            marker.on('click', () => { setTimeout(() => displaySchedule(point), 300); });
         });
 
         closeModalBtn.addEventListener('click', closeModal);
-        modal.addEventListener('click', (event) => {
-            if (event.target === modal) {
-                closeModal();
-            }
-        });
-        document.addEventListener('keydown', (event) => {
-            if (event.key === 'Escape') {
-                closeModal();
-            }
-        });
+        modal.addEventListener('click', (event) => { if (event.target === modal) { closeModal(); } });
+        document.addEventListener('keydown', (event) => { if (event.key === 'Escape') { closeModal(); } });
     </script>
 </body>
 </html>
